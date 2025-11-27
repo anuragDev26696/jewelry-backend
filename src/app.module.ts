@@ -13,7 +13,9 @@ import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true,
+      envFilePath: ['/etc/secrets/jewelry.txt'],
+    }),
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
