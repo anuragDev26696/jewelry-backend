@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Invoice</title>
+  <style>
+    *{ --gloden: #fcbf49; --danger: #d62828; --green: #1b9e77; --gray: gray; margin: 0; box-sizing: border-box; } body { font-family: 'Roboto', sans-serif; margin: 0; padding: 20px; } header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid currentColor; padding-bottom: 10px;} header img { width: 80px; font-size: x-small; color: var(--gray);} address {font-style: normal;} h1 { color: var(--danger); margin: 0; } section { border: 2px solid var(--gloden); padding: 12px; border-radius: 10px;} img{border-radius: 50vw;} table { width: 100%; border-collapse: collapse; margin-top: 20px; } th { background-color: #fcbf4980; text-align: left;} th, td { padding: 8px; border: 1px solid #ccc; } tfoot td { border: none; } th:not(:first-child, :last-child),td:not(:first-child, :last-child){text-align: center;} tfoot tr:first-child td, tfoot tr:last-child td { border-bottom: 2px solid currentColor; } tfoot tr:nth-child(3) td { padding-block: 0 } tfoot td { font-weight: bold; } .right { text-align: right; } footer { text-align: center; margin-top: 16px; padding-top: 20px; } footer p { font-size: small; color: gray; margin-bottom: 5px; }
+    @media print{body{margin:0;}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="company">
+        <h1>SWARN AABHUSHAN</h1>
+        <address><small>Naigarhi, Mauganj, Madhya Pradesh - 486341</small></address>
+        <small>Phone: +91 94249 81420 | Email: contact@swarnjeweller.in</small><br/>
+        <small>GSTIN: 09ABCDE1234F1Z6</small>
+    </div>
+    <img src="{{logoPath}}" width="80" height="80" alt="Swarn Aabhushan" />
+  </header>
+
+  <section>
+    <p><strong>Invoice No:</strong> {{billNumber}}</p>
+    <p><strong>Date:</strong> {{date}}</p>
+    <p><strong>Customer:</strong> {{customerName}}</p>
+    <p><strong>Phone:</strong> {{customerPhone}}</p>
+  </section>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Weight (g)</th>
+        <th>Rate/g</th>
+        <th>Making</th>
+        <th class="right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each items}}
+      <tr>
+        <td>{{name}}</td>
+        <td>{{weight}}</td>
+        <td>₹{{pricePerGram}}</td>
+        <td>{{makingCharge}}%</td>
+        <td class="right">₹{{total}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3">Subtotal:</td>
+        <td colspan="2" class="right">₹{{subtotal}}</td>
+      </tr>
+      <tr>
+        <td colspan="3">Tax:</td>
+        <td colspan="2" class="right">₹{{tax}}</td>
+      </tr>
+      <tr>
+        <td colspan="3">Discount:</td>
+        <td colspan="2" class="right">₹{{discount}}</td>
+      </tr>
+      <tr>
+        <td colspan="3">Grand Total:</td>
+        <td colspan="2" class="right">₹{{total}}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <footer>
+    <p>This is a computer-generated invoice — no signature required.<br/>
+    All jewellery sold is hallmarked as per BIS standards. Prices include GST.</p>
+    <b>Thank you for shopping with SWARN AABHUSHAN!</b>
+  </footer>
+</body>
+</html>
