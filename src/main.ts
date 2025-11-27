@@ -14,7 +14,7 @@ async function bootstrap() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cors())
-  await app.listen(port, '0.0.0.0');
+  await app.listen(port);
   console.log(`Server running on http://localhost:${port}/api`);
 }
 bootstrap();
