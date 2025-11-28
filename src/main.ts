@@ -11,7 +11,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({whitelist: true, transform: true}));
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 4000;
-  app.setGlobalPrefix('api', { exclude: ['/*path'] });
+  app.setGlobalPrefix('api');
   app.useBodyParser('json', { limit: '10mb' });
   app.useBodyParser('urlencoded', { extended: true, limit: '10mb' });
   // app.use(cors());
