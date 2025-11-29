@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { paginate, PaginationOptions, PaginationResult } from 'src/common/interface/pagination.interface';
@@ -8,7 +8,6 @@ import { UsersService } from 'src/users/users.service';
 import { BillType, UpdateBillPayment } from 'src/common/interface/bill.interface';
 import { User } from 'src/schemas/user.schema';
 import * as path from 'path';
-import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
 import { Buffer } from 'buffer';
 import { CommonUtils } from 'src/common/common.utils';
@@ -113,14 +112,15 @@ export class BillsService {
     const bill = await this.findById(billId);
     if (!bill) throw new NotFoundException('Bill not found');
 
-    const logoPath = path.resolve('src/assets/brand_logo.png');
-    const logoBase64 = fs.readFileSync(logoPath).toString('base64');
-    const ext = path.extname(logoPath).substring(1); // "png"
+    const logoPath = path.join(process.cwd(), 'dist', 'assets', 'brand_logo.png');
+    // const logoPath = path.resolve('src/assets/brand_logo.png');
+    // const logoBase64 = fs.readFileSync(logoPath).toString('base64');
+    // const ext = path.extname(logoPath).substring(1); // "png"
 
-    const logoDataUrl = `data:image/${ext};base64,${logoBase64}`;
-    if (!fs.existsSync(logoDataUrl)) {
-      throw new InternalServerErrorException('Logo file not found in /assets/logo.png');
-    }
+    // const logoDataUrl = `data:image/${ext};base64,${logoBase64}`;
+    // if (!fs.existsSync(logoDataUrl)) {
+    //   throw new InternalServerErrorException('Logo file not found in /assets/logo.png');
+    // }
 
     const data = {
       ...bill,
@@ -157,10 +157,27 @@ export class BillsService {
       const colWidths = [150, 80, 80, 80, 150]; // Item, Weight, Rate/g, Making, Total
       const tableWidth = colWidths.reduce((a, b) => a + b, 0);  // 540
 
-      let y_position = doc.y;
+      // let y_position = doc.y;
+      let y_position = 36; // Start printing at the top margin (36)
+      doc.y = y_position; // Ensure doc's internal y-position starts here
 
-      // A. Header Section
+      // A. Logo Insertion (Top Right)
+      const LOGO_SIZE = 80;
+      const LOGO_X = colStart + tableWidth - LOGO_SIZE; // 540 - 80 = 460
+      const LOGO_Y = y_position; 
+
+      // Use doc.image() with the path and options
+      doc.image(logoPath, LOGO_X, LOGO_Y, {
+          width: LOGO_SIZE,
+          height: LOGO_SIZE,
+          // You can apply clip/masking here to get a circular image if needed
+          // mask: doc.circle(LOGO_X + LOGO_SIZE/2, LOGO_Y + LOGO_SIZE/2, LOGO_SIZE/2) 
+      });
+
+      // Header Section
       doc.fillColor(primaryColor).fontSize(20).font('Helvetica-Bold').text('SWARN AABHUSHAN', colStart, y_position);
+      // Move text position down to avoid overlapping the logo
+      doc.y = LOGO_Y + LOGO_SIZE / 2; // Set y below the middle of the logo height
       doc.fillColor('black').fontSize(8).font('Helvetica')
         .text('Naigarhi, Mauganj, Madhya Pradesh - 486341', { continued: false })
         .text(`Phone: +91 94249 81420 | Email: contact@swarnjeweller.in`, { continued: false })
