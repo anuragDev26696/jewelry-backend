@@ -15,7 +15,7 @@ export interface BillType {
   discount: number;
   totalPaid: number;
   dueAmount: number;
-  paymentMode: PaymentMode|string;
+  paymentMode: string;
   paymentStatus: PaymentStatus;
   isDeleted: boolean;
   createdAt: Date;
