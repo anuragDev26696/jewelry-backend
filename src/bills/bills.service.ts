@@ -152,19 +152,23 @@ export class BillsService {
       const primaryColor = '#d62828'; 
       const highlightColor = '#fcbf49'; 
       const lightHighlightColor = '#fcbf4980';
+      const grayColor = 'gray';
+      const blackColor = 'black';
 
-      const colStart = 36;
+      const MARGIN = 36;
       const colWidths = [150, 80, 80, 80, 150]; // Item, Weight, Rate/g, Making, Total
       const tableWidth = colWidths.reduce((a, b) => a + b, 0);  // 540
+      const cellPadding = 8; // Increased padding for better look (was 5)
+      const itemHeight = 25; // Increased row height
 
       // let y_position = doc.y;
-      let y_position = 36; // Start printing at the top margin (36)
+      let y_position = MARGIN; // Start printing at the top margin (36)
       doc.y = y_position; // Ensure doc's internal y-position starts here
 
       // A. Logo Insertion (Top Right)
       const LOGO_SIZE = 80;
-      const LOGO_X = colStart + tableWidth - LOGO_SIZE; // 540 - 80 = 460
-      const LOGO_Y = y_position; 
+      const LOGO_X = MARGIN + tableWidth - LOGO_SIZE; // 540 - 80 = 460
+      const LOGO_Y = y_position;
 
       // Use doc.image() with the path and options
       doc.image(logoPath, LOGO_X, LOGO_Y, {
@@ -175,128 +179,172 @@ export class BillsService {
       });
 
       // Header Section
-      doc.fillColor(primaryColor).fontSize(20).font('Helvetica-Bold').text('SWARN AABHUSHAN', colStart, y_position);
+      doc.fillColor(primaryColor).fontSize(20).font('Helvetica-Bold').text('SWARN AABHUSHAN', MARGIN, y_position);
       // Move text position down to avoid overlapping the logo
-      doc.y = LOGO_Y + LOGO_SIZE / 2; // Set y below the middle of the logo height
-      doc.fillColor('black').fontSize(8).font('Helvetica')
-        .text('Naigarhi, Mauganj, Madhya Pradesh - 486341', { continued: false })
-        .text(`Phone: +91 94249 81420 | Email: contact@swarnjeweller.in`, { continued: false })
-        .text(`GSTIN: 09ABCDE1234F1Z6`, { continued: false });
+      doc.y = LOGO_Y + LOGO_SIZE * 0.35; // Set y below the middle of the logo height
+      doc.fillColor(blackColor).fontSize(8).font('Helvetica')
+         .text('Naigarhi, Mauganj, Madhya Pradesh - 486341', { continued: false, indent: 0, lineGap: 1 })
+         .text(`Phone: +91 94249 81420 | Email: contact@swarnjeweller.in`, { continued: false, lineGap: 1 })
+         .text(`GSTIN: 09ABCDE1234F1Z6`, { continued: false });
       
-      // Add logo (Note: you must use doc.image with a file path or Buffer, not a Data URL)
-      // For simplicity, we skip image embedding here as it requires resolving the actual file.
+      // Dividing Line (Same as Puppeteer output: strong bottom border of header)
+      y_position = doc.y + 10;
+      doc.strokeColor(primaryColor).lineWidth(2).moveTo(MARGIN, y_position).lineTo(MARGIN + tableWidth, y_position).stroke();
+      doc.moveDown(2);
 
-      doc.strokeColor(primaryColor).lineWidth(2).moveTo(colStart, doc.y + 5).lineTo(colStart + tableWidth, doc.y + 5).stroke();
-      doc.moveDown(1.5);
 
-      // B. Invoice Details Section
+      // B. INVOICE DETAILS SECTION
       y_position = doc.y;
-      const sectionHeight = 60;
-      doc.rect(colStart, y_position, tableWidth, sectionHeight).lineWidth(2).strokeColor(highlightColor).stroke();
+      const SECTION_HEIGHT = 65;
 
-      const paddingX = 12;
-      const startX = colStart + paddingX;
+      // Draw the Golden Border
+      doc.rect(MARGIN, y_position, tableWidth, SECTION_HEIGHT)
+         .lineWidth(2)
+         .strokeColor(highlightColor)
+         .stroke();
+
+      // Content coordinates
+      const startX = MARGIN + 12; // 12px padding
       const detailsY = y_position + 10;
       const customerStartX = 300;
+      
+      doc.fillColor(blackColor).fontSize(10);
+      
+      // Row 1
+      doc.font('Helvetica-Bold').text(`Invoice No:`, startX, detailsY);
+      doc.font('Helvetica').text(`${data.billNumber}`, startX + 70, detailsY);
+      doc.font('Helvetica-Bold').text(`Customer:`, customerStartX, detailsY);
+      doc.font('Helvetica').text(`${data.customerName}`, customerStartX + 60, detailsY);
 
-      doc.fillColor('black').fontSize(10).font('Helvetica-Bold')
-       .text(`Invoice No:`, startX, detailsY)
-       .font('Helvetica').text(`${data.billNumber}`, startX + 60, detailsY, { continued: false });
-      doc.font('Helvetica-Bold').text(`Date:`, startX, detailsY + 15)
-        .font('Helvetica').text(`${data.date}`, startX + 60, detailsY + 15, { continued: false });
-      doc.font('Helvetica-Bold').text(`Customer:`, customerStartX, detailsY)
-        .font('Helvetica').text(`${data.customerName}`, customerStartX + 50, detailsY, { continued: false });
-      doc.font('Helvetica-Bold').text(`Phone:`, customerStartX, detailsY + 15)
-        .font('Helvetica').text(`${data.customerPhone}`, customerStartX + 50, detailsY + 15, { continued: false });
+      // Row 2
+      doc.font('Helvetica-Bold').text(`Date:`, startX, detailsY + 15);
+      doc.font('Helvetica').text(`${data.date}`, startX + 70, detailsY + 15);
+      doc.font('Helvetica-Bold').text(`Phone:`, customerStartX, detailsY + 15);
+      doc.font('Helvetica').text(`${data.customerPhone}`, customerStartX + 60, detailsY + 15);
+      
+      doc.moveDown(5); // Move past the section
 
-      doc.moveDown(5);
+      // C. TABLE SECTION
 
-      // C. Table Section
-      const tableTop = doc.y;
-      const itemHeight = 20;
-      const cellPadding = 5;
-      let currentY = tableTop;
+      let currentY = doc.y;
+      
+      // Helper function to calculate X position for text alignment
+      const getX = (text: string, colIndex: number, currentColX: number, colWidth: number, align: string): number => {
+          if (align === 'left') return currentColX + cellPadding;
+          if (align === 'right') return currentColX + colWidth - doc.widthOfString(text) - cellPadding;
+          if (align === 'center') return currentColX + (colWidth / 2) - (doc.widthOfString(text) / 2);
+          return currentColX + cellPadding;
+      };
 
-      // Header
-      doc.fillColor(lightHighlightColor).rect(colStart, currentY, tableWidth, itemHeight).fill();
-      doc.fillColor('black').fontSize(10).font('Helvetica-Bold');
-        
-      ['Item', 'Weight (g)', 'Rate/g', 'Making', 'Total'].forEach((header, i) => {
+      // Table Header Background (Light Golden)
+      doc.fillColor(lightHighlightColor)
+         .rect(MARGIN, currentY, tableWidth, itemHeight)
+         .fill();
+      
+      doc.fillColor(blackColor).fontSize(10).font('Helvetica-Bold');
+      let currentX = MARGIN;
+      
+      const headers = ['Item', 'Weight (g)', 'Rate/g', 'Making', 'Total'];
+      const headerAligns = ['left', 'center', 'center', 'center', 'right'];
+
+      // Draw Headers
+      headers.forEach((header, i) => {
           const width = colWidths[i];
-          const prevWidths = colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-          const currentX = colStart + prevWidths;
-          const align: PDFKit.Mixins.TextOptions['align'] = (i === 4) ? 'right' : (i > 0 && i < 4) ? 'center' : 'left';
-          
-          let textX = currentX + cellPadding;
-          if (i === 4) textX = currentX + width - doc.widthOfString(header) - cellPadding;
-          
-          doc.text(header, textX, currentY + cellPadding, { width: width - (2 * cellPadding), align: align, lineBreak: false });
+          const align = headerAligns[i] as 'left' | 'center' | 'right';
+          const textX = getX(header, i, currentX, width, align);
+
+          doc.text(header, textX, currentY + cellPadding, {
+              width: width - (2 * cellPadding),
+              align: align,
+              lineBreak: false
+          });
+          currentX += width;
       });
+
+      // Table Body
       currentY += itemHeight;
+      doc.font('Helvetica').fillColor(blackColor);
 
-      // Body
-      doc.font('Helvetica').fillColor('black');
       data.items.forEach(item => {
-        doc.lineWidth(1).strokeColor('#ccc').moveTo(colStart, currentY).lineTo(colStart + tableWidth, currentY).stroke();
+        currentX = MARGIN;
 
-        [
+        // Draw light grey horizontal line for each row
+        doc.lineWidth(1).strokeColor('#ccc').moveTo(MARGIN, currentY).lineTo(MARGIN + tableWidth, currentY).stroke();
+
+        const rowData = [
           item.name, 
           item.weight, 
           `₹${item.pricePerGram}`, 
           `${item.makingCharge}%`, 
           `₹${item.total}`
-        ].forEach((cellText, i) => {
+        ];
+
+        // Draw Row Cells
+        rowData.forEach((cellText, i) => {
             const width = colWidths[i];
-            const prevWidths = colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-            const currentX = colStart + prevWidths;
-
-            const align: PDFKit.Mixins.TextOptions['align'] = (i === 4) ? 'right' : (i > 0 && i < 4) ? 'center' : 'left';
-
-            let textX = currentX + cellPadding;
-            if (i === 4) textX = currentX + width - doc.widthOfString(cellText) - cellPadding;
+            const align = headerAligns[i] as 'left' | 'center' | 'right'; // Use the same alignment as headers
+            const textX = getX(cellText, i, currentX, width, align);
             
-            doc.text(cellText, textX, currentY + cellPadding, { width: width - (2 * cellPadding), align: align, lineBreak: false });
+            doc.text(cellText, textX, currentY + cellPadding, {
+                width: width - (2 * cellPadding),
+                align: align,
+                lineBreak: false
+            });
+            currentX += width;
         });
         currentY += itemHeight;
       });
 
-      doc.lineWidth(1).strokeColor('#ccc').moveTo(colStart, currentY).lineTo(colStart + tableWidth, currentY).stroke();
-    
-      // D. Table Footer (Totals)
-      const totalColStart = colStart + colWidths[0] + colWidths[1] + colWidths[2];
-      const totalColWidth = colWidths[3] + colWidths[4];
-      const rightAlignStart = totalColStart - 100;
-      const valueAlignStart = totalColStart + 10;
-
+      // Bottom border for body
+      doc.lineWidth(1).strokeColor('#ccc').moveTo(MARGIN, currentY).lineTo(MARGIN + tableWidth, currentY).stroke();
+      
+      
+      // D. TABLE FOOTER (Totals)
+      
+      // Column start position for the totals (right side of the table)
+      const totalColStart = MARGIN + colWidths[0] + colWidths[1] + colWidths[2]; // Start of colspan=3
+      const totalColWidth = colWidths[3] + colWidths[4]; // Width of colspan=2
+      const labelX = totalColStart - 100; // Left label start
+      const valueX = totalColStart + 10; // Right value start
+      
+      // Subtotal
       currentY += 5;
-      doc.font('Helvetica-Bold').text('Subtotal:', rightAlignStart, currentY, { width: 100, align: 'right' });
-      doc.text(`₹${data.subtotal}`, valueAlignStart, currentY, { width: totalColWidth - 20, align: 'right' });
-      
-      currentY += 15;
-      doc.text('Tax:', rightAlignStart, currentY, { width: 100, align: 'right' });
-      doc.text(`₹${data.tax}`, valueAlignStart, currentY, { width: totalColWidth - 20, align: 'right' });
-      
-      currentY += 15;
-      doc.text('Discount:', rightAlignStart, currentY, { width: 100, align: 'right' });
-      doc.text(`₹${data.discount}`, valueAlignStart, currentY, { width: totalColWidth - 20, align: 'right' });
-      
-      currentY += 15;
-      doc.strokeColor('black').lineWidth(2).moveTo(totalColStart, currentY).lineTo(colStart + tableWidth, currentY).stroke();
+      doc.font('Helvetica-Bold');
+      doc.text('Subtotal:', labelX, currentY, { width: 100, align: 'right' });
+      doc.text(`₹${data.subtotal}`, valueX, currentY, { width: totalColWidth - 20, align: 'right' });
 
-      currentY += 5;
-      doc.fontSize(12).text('Grand Total:', rightAlignStart, currentY, { width: 100, align: 'right' });
-      doc.text(`₹${data.total}`, valueAlignStart, currentY, { width: totalColWidth - 20, align: 'right' });
+      // Tax
+      currentY += 15;
+      doc.text('Tax:', labelX, currentY, { width: 100, align: 'right' });
+      doc.text(`₹${data.tax}`, valueX, currentY, { width: totalColWidth - 20, align: 'right' });
+
+      // Discount
+      currentY += 15;
+      doc.text('Discount:', labelX, currentY, { width: 100, align: 'right' });
+      doc.text(`₹${data.discount}`, valueX, currentY, { width: totalColWidth - 20, align: 'right' });
       
+      // Divider before Grand Total
+      currentY += 15;
+      doc.strokeColor(blackColor).lineWidth(2).moveTo(totalColStart, currentY).lineTo(MARGIN + tableWidth, currentY).stroke();
+
+      // Grand Total
+      currentY += 5;
+      doc.fontSize(12).text('Grand Total:', labelX, currentY, { width: 100, align: 'right' });
+      doc.text(`₹${data.total}`, valueX, currentY, { width: totalColWidth - 20, align: 'right' });
+      
+      // Bottom Divider
       currentY += 25;
-      doc.strokeColor('black').lineWidth(2).moveTo(totalColStart, currentY).lineTo(colStart + tableWidth, currentY).stroke();
+      doc.strokeColor(blackColor).lineWidth(2).moveTo(totalColStart, currentY).lineTo(MARGIN + tableWidth, currentY).stroke();
 
-      // E. Footer Section
-      doc.fillColor('gray').fontSize(8).font('Helvetica').moveDown(3)
-        .text('This is a computer-generated invoice — no signature required.', { align: 'center' })
-        .text('All jewellery sold is hallmarked as per BIS standards. Prices include GST.', { align: 'center' }).moveDown(0.5);
 
-      doc.fillColor('black').fontSize(10).font('Helvetica-Bold')
-        .text('Thank you for shopping with SWARN AABHUSHAN!', { align: 'center' });
+      // E. FOOTER SECTION
+      
+      doc.fillColor(grayColor).fontSize(8).font('Helvetica').moveDown(3)
+         .text('This is a computer-generated invoice — no signature required.', { align: 'center' })
+         .text('All jewellery sold is hallmarked as per BIS standards. Prices include GST.', { align: 'center' }).moveDown(0.5);
+
+      doc.fillColor(blackColor).fontSize(10).font('Helvetica-Bold')
+         .text('Thank you for shopping with SWARN AABHUSHAN!', { align: 'center' });
 
       doc.end();
     });
