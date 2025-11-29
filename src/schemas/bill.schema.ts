@@ -46,7 +46,7 @@ export class Bill {
   @Prop({ default: 0 }) total: number;
   @Prop({ default: 0 }) dueAmount: number;
   @Prop({ default: 0 }) totalPaid: number;
-  @Prop({ enum: [...Object.values(PaymentMode), ''], type: String, default: '' }) paymentMode: PaymentMode|string;
+  @Prop({ enum: [...Object.values(PaymentMode), ''], type: String, default: '' }) paymentMode: string;
   @Prop({ enum: PaymentStatus, type: String, default: PaymentStatus.PENDING }) paymentStatus: PaymentStatus;
   createdAt: Date;
   updatedAt: Date;

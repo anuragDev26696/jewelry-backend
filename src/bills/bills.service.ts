@@ -1,16 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { paginate, PaginationOptions, PaginationResult } from 'src/common/interface/pagination.interface';
 import { CreateBillDto } from 'src/dtos/bill.dto';
 import { Bill, BillDocument } from 'src/schemas/bill.schema';
 import { UsersService } from 'src/users/users.service';
-import * as Handlebars from 'handlebars';
-import * as puppeteer from 'puppeteer';
 import { BillType, UpdateBillPayment } from 'src/common/interface/bill.interface';
 import { User } from 'src/schemas/user.schema';
 import * as path from 'path';
 import * as fs from 'fs';
+import PDFDocument from 'pdfkit';
 import { Buffer } from 'buffer';
 import { CommonUtils } from 'src/common/common.utils';
 
@@ -110,186 +109,229 @@ export class BillsService {
     ).exec();
   }
 
-  // async generateInvoicePdf(billId: string): Promise<Buffer> {
-  //   const bill = await this.findById(billId);
-  //   if (!bill) throw new NotFoundException('Bill not found');
-
-  //   // PDF Setup
-  //   const doc = new PDFDocument({ margin: 10 });
-  //   const chunks: Buffer[] = [];
-
-  //   const logoPath = path.resolve(__dirname, '../../assets/Swarn_abhushan.png');
-  //   // const logoPath = path.resolve(process.cwd(), 'assets/logo.png');
-  //   if (!fs.existsSync(logoPath)) {
-  //     throw new InternalServerErrorException('Logo file not found in /assets/logo.png');
-  //   }
-
-  //   return new Promise<Buffer>((resolve, reject) => {
-  //     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-  //     doc.on('end', () => resolve(Buffer.concat(chunks)));
-  //     doc.on('error', reject);
-
-  //     // HEADER
-  //     doc.image(logoPath, 450, 30, { width: 60 });
-
-  //     doc
-  //       .fontSize(22)
-  //       .fillColor('#d62828')
-  //       .text('SWARN ABHUSHAN', 40, 30);
-
-  //     doc
-  //       .fontSize(10)
-  //       .fillColor('black')
-  //       .text('Naigarhi, Mauganj, Madhya Pradesh - 486341', 40, 60)
-  //       .text('Phone: +91 94249 81420 | Email: contact@swarnjeweller.in')
-  //       .text('GSTIN: 09ABCDE1234F1Z6')
-  //       .moveDown(1.2);
-
-  //     // INVOICE BOX
-  //     const boxTop = doc.y;
-  //     doc
-  //       .rect(40, boxTop, 520, 70)
-  //       .stroke('#fcbf49')
-  //       .fillOpacity(0.05)
-  //       .fill('#fff8e1').roundedRect(0,0,5,5)
-  //       .fillOpacity(1);
-
-  //     doc
-  //       .fontSize(12)
-  //       .fillColor('black')
-  //       .text(`Invoice No: ${bill.billNumber}`, 50, boxTop + 10)
-  //       .text(`Date: ${new Date(bill.createdAt).toLocaleDateString()}`, 50, boxTop + 28)
-  //       .text(`Billed By: SWARN ABHUSHAN`, 350, boxTop + 10);
-
-  //     // Customer
-  //     doc
-  //       .moveDown(2)
-  //       .fontSize(11)
-  //       .text(`Customer Name: ${bill.customerName}`)
-  //       .text(`Phone: ${bill.customerPhone}`)
-  //       .moveDown(1);
-
-  //     // TABLE HEADER
-  //     const cols = [50, 200, 280, 360, 430];
-  //     doc.fontSize(11).fillColor('black');
-  //     doc.text('Item', cols[0]);
-  //     doc.text('Weight (g)', cols[1]);
-  //     doc.text('Rate/g (₹)', cols[2]);
-  //     doc.text('Making %', cols[3]);
-  //     doc.text('Total (₹)', cols[4]);
-
-  //     doc.moveDown(0.5);
-  //     doc.moveTo(40, doc.y).lineTo(560, doc.y).stroke();
-
-  //     // TABLE ROWS
-  //     const round2 = (v: number) => Math.round((v + Number.EPSILON) * 100) / 100;
-  //     let calculatedSubtotal = 0;
-
-  //     for (const item of bill.items) {
-  //       const basicAmount = item.weight * item.pricePerGram;
-  //       const makingChargeAmount = basicAmount * (item.makingCharge / 100);
-  //       const total = basicAmount + makingChargeAmount;
-  //       calculatedSubtotal += total;
-
-  //       doc.moveDown(0.5);
-  //       doc.text(item.name, cols[0]);
-  //       doc.text(item.weight.toFixed(2), cols[1]);
-  //       doc.text(`₹${round2(item.pricePerGram)}`, cols[2]);
-  //       doc.text(`${round2(item.makingCharge)}%`, cols[3]);
-  //       doc.text(`₹${round2(total)}`, cols[4]);
-  //     }
-
-  //     doc.moveDown(1);
-  //     doc.moveTo(40, doc.y).lineTo(560, doc.y).stroke();
-
-  //     // TOTALS (use DB values)
-  //     const subtotal = bill.subtotal ?? calculatedSubtotal;
-  //     const tax = bill.taxAmount ?? 0;
-  //     const discount = bill.discount ?? 0;
-  //     const grandTotal = bill.total ?? subtotal + tax - discount;
-
-  //     doc
-  //       .fontSize(11)
-  //       .text(`Subtotal`, 380)
-  //       .text(`₹${round2(subtotal)}`, 520, doc.y - 14, { align: 'right' })
-  //       .moveDown(0.3)
-  //       .text(`Tax (${bill.tax}%)`, 380)
-  //       .text(`₹${round2(tax)}`, 520, doc.y - 14, { align: 'right' })
-  //       .moveDown(0.3)
-  //       .text(`Discount`, 380)
-  //       .text(`₹-${round2(discount)}`, 520, doc.y - 14, { align: 'right' })
-  //       .moveDown(1)
-  //       .font('Helvetica-Bold')
-  //       .text(`Grand Total`, 380)
-  //       .fillColor('#1b9e77')
-  //       .text(`₹${round2(grandTotal)}`, 520, doc.y - 14, { align: 'right' })
-  //       .fillColor('black')
-  //       .moveDown(2);
-
-  //     // FOOTER
-  //     doc
-  //       .fontSize(9)
-  //       .fillColor('gray')
-  //       .text(
-  //         'This is a computer-generated invoice — no signature required.\nAll jewellery sold is hallmarked as per BIS standards. Prices include GST.',
-  //         { align: 'center' },
-  //       )
-  //       .moveDown(1)
-  //       .fillColor('black')
-  //       .fontSize(10)
-  //       .text('Thank you for shopping with SWARN ABHUSHAN!', { align: 'center' });
-
-  //     doc.end();
-  //   });
-  // }
-
   async generateInvoicePdf(billId: string): Promise<Buffer> {
     const bill = await this.findById(billId);
     if (!bill) throw new NotFoundException('Bill not found');
-
-    const templateHtml = fs.readFileSync(path.join(__dirname, 'invoice.template.html'), 'utf-8');
-    const template = Handlebars.compile(templateHtml);
 
     const logoPath = path.resolve('src/assets/brand_logo.png');
     const logoBase64 = fs.readFileSync(logoPath).toString('base64');
     const ext = path.extname(logoPath).substring(1); // "png"
 
     const logoDataUrl = `data:image/${ext};base64,${logoBase64}`;
+    if (!fs.existsSync(logoDataUrl)) {
+      throw new InternalServerErrorException('Logo file not found in /assets/logo.png');
+    }
 
     const data = {
-      logoPath: logoDataUrl,
-      billNumber: bill.billNumber,
+      ...bill,
       date: new Date(bill.createdAt).toLocaleDateString(),
-      customerName: bill.customerName,
-      customerPhone: bill.customerPhone,
-      items: bill.items.map(item => ({
-        ...item,
-        total: (item.weight * item.pricePerGram * (1 + item.makingCharge / 100)).toFixed(2),
-        weight: item.weight.toFixed(2)
-      })),
-      subtotal: bill.items.reduce((sum, item) => sum + item.weight * item.pricePerGram * (1 + item.makingCharge / 100), 0).toFixed(2),
+      items: bill.items.map(item => {
+        const itemTotal = item.weight * item.pricePerGram * (1 + item.makingCharge / 100);
+        return {
+          ...item,
+          total: itemTotal.toFixed(2),
+          weight: item.weight.toFixed(2),
+          pricePerGram: item.pricePerGram.toFixed(2),
+        };
+      }),
+      subtotal: bill.subtotal.toFixed(2),
       tax: bill.taxAmount.toFixed(2),
       discount: bill.discount.toFixed(2),
       total: bill.total.toFixed(2)
     };
 
-    const html = template(data);
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-gpu",
-        "--no-zygote",
-        "--single-process",
-      ],
+    return new Promise<Buffer>((resolve, reject) => {      
+      const doc = new PDFDocument({ size: 'A4', margin: 0 });
+      const buffers: Buffer[] = [];
+
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', reject);
+
+      // styles
+      const primaryColor = '#d62828'; 
+      const highlightColor = '#fcbf49'; 
+      const lightHighlightColor = '#fcbf4980';
+
+      const colStart = 36;
+      const colWidths = [150, 80, 80, 80, 150]; // Item, Weight, Rate/g, Making, Total
+      const tableWidth = colWidths.reduce((a, b) => a + b, 0);  // 540
+
+      let y_position = doc.y;
+
+      // A. Header Section
+      doc.fillColor(primaryColor).fontSize(20).font('Helvetica-Bold').text('SWARN AABHUSHAN', colStart, y_position);
+      doc.fillColor('black').fontSize(8).font('Helvetica')
+        .text('Naigarhi, Mauganj, Madhya Pradesh - 486341', { continued: false })
+        .text(`Phone: +91 94249 81420 | Email: contact@swarnjeweller.in`, { continued: false })
+        .text(`GSTIN: 09ABCDE1234F1Z6`, { continued: false });
+      
+      // Add logo (Note: you must use doc.image with a file path or Buffer, not a Data URL)
+      // For simplicity, we skip image embedding here as it requires resolving the actual file.
+
+      doc.strokeColor(primaryColor).lineWidth(2).moveTo(colStart, doc.y + 5).lineTo(colStart + tableWidth, doc.y + 5).stroke();
+      doc.moveDown(1.5);
+
+      // B. Invoice Details Section
+      y_position = doc.y;
+      const sectionHeight = 60;
+      doc.rect(colStart, y_position, tableWidth, sectionHeight).lineWidth(2).strokeColor(highlightColor).stroke();
+
+      const paddingX = 12;
+      const startX = colStart + paddingX;
+      const detailsY = y_position + 10;
+      const customerStartX = 300;
+
+      doc.fillColor('black').fontSize(10).font('Helvetica-Bold')
+       .text(`Invoice No:`, startX, detailsY)
+       .font('Helvetica').text(`${data.billNumber}`, startX + 60, detailsY, { continued: false });
+      doc.font('Helvetica-Bold').text(`Date:`, startX, detailsY + 15)
+        .font('Helvetica').text(`${data.date}`, startX + 60, detailsY + 15, { continued: false });
+      doc.font('Helvetica-Bold').text(`Customer:`, customerStartX, detailsY)
+        .font('Helvetica').text(`${data.customerName}`, customerStartX + 50, detailsY, { continued: false });
+      doc.font('Helvetica-Bold').text(`Phone:`, customerStartX, detailsY + 15)
+        .font('Helvetica').text(`${data.customerPhone}`, customerStartX + 50, detailsY + 15, { continued: false });
+
+      doc.moveDown(5);
+
+      // C. Table Section
+      const tableTop = doc.y;
+      const itemHeight = 20;
+      const cellPadding = 5;
+      let currentY = tableTop;
+
+      // Header
+      doc.fillColor(lightHighlightColor).rect(colStart, currentY, tableWidth, itemHeight).fill();
+      doc.fillColor('black').fontSize(10).font('Helvetica-Bold');
+        
+      ['Item', 'Weight (g)', 'Rate/g', 'Making', 'Total'].forEach((header, i) => {
+          const width = colWidths[i];
+          const prevWidths = colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+          const currentX = colStart + prevWidths;
+          const align: PDFKit.Mixins.TextOptions['align'] = (i === 4) ? 'right' : (i > 0 && i < 4) ? 'center' : 'left';
+          
+          let textX = currentX + cellPadding;
+          if (i === 4) textX = currentX + width - doc.widthOfString(header) - cellPadding;
+          
+          doc.text(header, textX, currentY + cellPadding, { width: width - (2 * cellPadding), align: align, lineBreak: false });
+      });
+      currentY += itemHeight;
+
+      // Body
+      doc.font('Helvetica').fillColor('black');
+      data.items.forEach(item => {
+        doc.lineWidth(1).strokeColor('#ccc').moveTo(colStart, currentY).lineTo(colStart + tableWidth, currentY).stroke();
+
+        [
+          item.name, 
+          item.weight, 
+          `₹${item.pricePerGram}`, 
+          `${item.makingCharge}%`, 
+          `₹${item.total}`
+        ].forEach((cellText, i) => {
+            const width = colWidths[i];
+            const prevWidths = colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+            const currentX = colStart + prevWidths;
+
+            const align: PDFKit.Mixins.TextOptions['align'] = (i === 4) ? 'right' : (i > 0 && i < 4) ? 'center' : 'left';
+
+            let textX = currentX + cellPadding;
+            if (i === 4) textX = currentX + width - doc.widthOfString(cellText) - cellPadding;
+            
+            doc.text(cellText, textX, currentY + cellPadding, { width: width - (2 * cellPadding), align: align, lineBreak: false });
+        });
+        currentY += itemHeight;
+      });
+
+      doc.lineWidth(1).strokeColor('#ccc').moveTo(colStart, currentY).lineTo(colStart + tableWidth, currentY).stroke();
+    
+      // D. Table Footer (Totals)
+      const totalColStart = colStart + colWidths[0] + colWidths[1] + colWidths[2];
+      const totalColWidth = colWidths[3] + colWidths[4];
+      const rightAlignStart = totalColStart - 100;
+      const valueAlignStart = totalColStart + 10;
+
+      currentY += 5;
+      doc.font('Helvetica-Bold').text('Subtotal:', rightAlignStart, currentY, { width: 100, align: 'right' });
+      doc.text(`₹${data.subtotal}`, valueAlignStart, currentY, { width: totalColWidth - 20, align: 'right' });
+      
+      currentY += 15;
+      doc.text('Tax:', rightAlignStart, currentY, { width: 100, align: 'right' });
+      doc.text(`₹${data.tax}`, valueAlignStart, currentY, { width: totalColWidth - 20, align: 'right' });
+      
+      currentY += 15;
+      doc.text('Discount:', rightAlignStart, currentY, { width: 100, align: 'right' });
+      doc.text(`₹${data.discount}`, valueAlignStart, currentY, { width: totalColWidth - 20, align: 'right' });
+      
+      currentY += 15;
+      doc.strokeColor('black').lineWidth(2).moveTo(totalColStart, currentY).lineTo(colStart + tableWidth, currentY).stroke();
+
+      currentY += 5;
+      doc.fontSize(12).text('Grand Total:', rightAlignStart, currentY, { width: 100, align: 'right' });
+      doc.text(`₹${data.total}`, valueAlignStart, currentY, { width: totalColWidth - 20, align: 'right' });
+      
+      currentY += 25;
+      doc.strokeColor('black').lineWidth(2).moveTo(totalColStart, currentY).lineTo(colStart + tableWidth, currentY).stroke();
+
+      // E. Footer Section
+      doc.fillColor('gray').fontSize(8).font('Helvetica').moveDown(3)
+        .text('This is a computer-generated invoice — no signature required.', { align: 'center' })
+        .text('All jewellery sold is hallmarked as per BIS standards. Prices include GST.', { align: 'center' }).moveDown(0.5);
+
+      doc.fillColor('black').fontSize(10).font('Helvetica-Bold')
+        .text('Thank you for shopping with SWARN AABHUSHAN!', { align: 'center' });
+
+      doc.end();
     });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    const pdfUint8 = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '0', bottom: '0' } });
-
-    await browser.close();
-    return Buffer.from(pdfUint8);
   }
+
+  // async generateInvoicePdf(billId: string): Promise<Buffer> {
+  //   const bill = await this.findById(billId);
+  //   if (!bill) throw new NotFoundException('Bill not found');
+
+  //   const templateHtml = fs.readFileSync(path.join(__dirname, 'invoice.template.html'), 'utf-8');
+  //   const template = Handlebars.compile(templateHtml);
+
+  //   const logoPath = path.resolve('src/assets/brand_logo.png');
+  //   const logoBase64 = fs.readFileSync(logoPath).toString('base64');
+  //   const ext = path.extname(logoPath).substring(1); // "png"
+
+  //   const logoDataUrl = `data:image/${ext};base64,${logoBase64}`;
+
+  //   const data = {
+  //     logoPath: logoDataUrl,
+  //     billNumber: bill.billNumber,
+  //     date: new Date(bill.createdAt).toLocaleDateString(),
+  //     customerName: bill.customerName,
+  //     customerPhone: bill.customerPhone,
+  //     items: bill.items.map(item => ({
+  //       ...item,
+  //       total: (item.weight * item.pricePerGram * (1 + item.makingCharge / 100)).toFixed(2),
+  //       weight: item.weight.toFixed(2)
+  //     })),
+  //     subtotal: bill.items.reduce((sum, item) => sum + item.weight * item.pricePerGram * (1 + item.makingCharge / 100), 0).toFixed(2),
+  //     tax: bill.taxAmount.toFixed(2),
+  //     discount: bill.discount.toFixed(2),
+  //     total: bill.total.toFixed(2)
+  //   };
+
+  //   const html = template(data);
+  //   const browser = await puppeteer.launch({
+  //     headless: true,
+  //     args: [
+  //       "--no-sandbox",
+  //       "--disable-setuid-sandbox",
+  //       "--disable-gpu",
+  //       "--no-zygote",
+  //       "--single-process",
+  //     ],
+  //   });
+  //   const page = await browser.newPage();
+  //   await page.setContent(html, { waitUntil: 'networkidle0' });
+
+  //   const pdfUint8 = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '0', bottom: '0' } });
+
+  //   await browser.close();
+  //   return Buffer.from(pdfUint8);
+  // }
 }
