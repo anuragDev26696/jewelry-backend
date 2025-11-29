@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { paginate, PaginationOptions, PaginationResult } from 'src/common/interface/pagination.interface';
@@ -124,7 +124,18 @@ export class BillsService {
 
     const data = {
       ...bill,
+      ...bill,
       date: new Date(bill.createdAt).toLocaleDateString(),
+      items: bill.items.map(item => {
+        const itemTotal = item.weight * item.pricePerGram * (1 + item.makingCharge / 100);
+        return {
+          ...item,
+          total: itemTotal.toFixed(2),
+          weight: item.weight.toFixed(2),
+          pricePerGram: item.pricePerGram.toFixed(2),
+        };
+      }),
+      subtotal: bill.subtotal.toFixed(2),
       items: bill.items.map(item => {
         const itemTotal = item.weight * item.pricePerGram * (1 + item.makingCharge / 100);
         return {
