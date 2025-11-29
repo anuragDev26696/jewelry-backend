@@ -26,6 +26,10 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory inside the container
 WORKDIR /usr/src/app
 
+ENV PUPPETEER_PRODUCT=chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=false
+ENV PUPPETEER_EXECUTABLE_PATH=""
+
 # 2. Install Node dependencies
 # Copy package.json and package-lock.json first to utilize Docker's build cache
 COPY package*.json ./
