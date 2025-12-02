@@ -63,6 +63,9 @@ export class BillsController {
           { 'customer.name': { $regex: keywordRegex } },
         ];
       }
+      if(searchQuery.billStatus && searchQuery.billStatus.trim() !== '') {
+        billQuery.paymentStatus = searchQuery.billStatus.trim();
+      }
 
       return await this.billService.findAll({
         query: billQuery,

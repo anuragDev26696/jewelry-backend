@@ -26,4 +26,9 @@ export class SearchRequestDTO {
   @IsString()
   @Type(() => String)
   billId?: string;
+  
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  billStatus?: string;
 }

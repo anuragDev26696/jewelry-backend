@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { CommonUtils } from 'src/common/common.utils';
 import { ItemsService } from './items.service';
 import { CreateItemDto } from 'src/dtos/item.dto';
@@ -31,6 +31,15 @@ export class ItemsController {
   async findOne(@Param('id') id: string) {
     try {
       return await this.itemService.findById(id);
+    } catch (error) {
+      throw CommonUtils.formatError(error);
+    }
+  }
+
+  @Put(':id')
+  async updateOne(@Param('id') id: string, @Body() itemReq: CreateItemDto) {
+    try {
+      return await this.itemService.update(id, itemReq);
     } catch (error) {
       throw CommonUtils.formatError(error);
     }
