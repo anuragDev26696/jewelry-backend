@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { CommonUtils } from 'src/common/common.utils';
 import { ItemType } from 'src/common/interface/item.interface';
 import { paginate, PaginationOptions, PaginationResult } from 'src/common/interface/pagination.interface';
 import { CreateItemDto } from 'src/dtos/item.dto';
@@ -31,21 +32,33 @@ export class ItemsService {
 
       return created.toObject();
     } catch (error) {
-      console.error('Error in create method:', error);
-      if (error instanceof BadRequestException) throw error;
-      throw new InternalServerErrorException('Failed to create item');
+      throw CommonUtils.formatError(error);
     }
   }
 
   async findById(uuid: string): Promise<ItemType> {
     try {
       const user = await this.itemModel.findOne({uuid, isDeleted: false}).exec();
-      if (!user || user.isDeleted)
+      if (!user)
         throw new NotFoundException('Item not found');
       return user;
     } catch (error) {
-      if (error instanceof NotFoundException) throw error;
-      throw new InternalServerErrorException('Failed to fetch item');
+      throw CommonUtils.formatError(error);
+    }
+  }
+
+  async update(itemId: string, itemDto: CreateItemDto): Promise<ItemType|null> {
+    try {
+      const trimmedName = itemDto.name.trim();
+      const existing = await this.itemModel.findOne({uuid: itemId, isDeleted: false});
+      if (!existing) {
+        throw new NotFoundException('Item not found.');
+      }
+      await existing.updateOne({ ...itemDto, name: trimmedName }, {new: true});
+      const result: ItemType | null = await this.itemModel.findOne({uuid: itemId, isDeleted: false}).lean<ItemType>().exec();
+      return result;
+    } catch (error) {
+      throw CommonUtils.formatError(error);
     }
   }
 
@@ -57,8 +70,7 @@ export class ItemsService {
       });
 
     } catch (error) {
-      if (error instanceof BadRequestException) throw error;
-      throw new InternalServerErrorException('Failed to fetch items');
+      throw CommonUtils.formatError(error);
     }
   }
 
@@ -68,8 +80,7 @@ export class ItemsService {
       if (!deleted) throw new NotFoundException('Item not found');
       return deleted;
     } catch (error) {
-      if (error instanceof NotFoundException) throw error;
-      throw new InternalServerErrorException('Failed to delete item');
+      throw CommonUtils.formatError(error);
     }
   }
 }
