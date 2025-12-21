@@ -28,7 +28,7 @@ export class BillsController {
   @Post('search')
   async searchBill(@Body() searchQuery: SearchRequestDTO) {
     try {
-      const { keyword, userId, page, limit } = searchQuery;
+      const { keyword, userId, page, limit, billStatus } = searchQuery;
       const billQuery: QueryOptions<Bill> = { isDeleted: false };
       if (userId) {
         billQuery.customerId = userId;
@@ -40,7 +40,10 @@ export class BillsController {
           ];
         }
       }
-      else if (keyword) {
+      if (billStatus) {
+        billQuery.paymentStatus = billStatus;
+      }
+      if (keyword) {
         const keywordRegex = new RegExp(keyword.trim(), 'i');
         const matchedUsers = await this.userService.findAll({query: {$or: [{name: { $regex: keywordRegex }}, {email: { $regex: keywordRegex }}, {mobile: {$regex: keywordRegex}}]}}).then(res => res.data);
         const userIds = matchedUsers.map((u) => u.uuid);
