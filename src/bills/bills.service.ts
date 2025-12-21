@@ -45,11 +45,11 @@ export class BillsService {
     try {
       const bill = await this.billModel.findOne({uuid: id}).lean<BillType>().exec();
       if (!bill)
-        throw new NotFoundException('Item bill found');
+        throw new NotFoundException('Bill bill found');
       
       const user = await this.userService.findById(bill.customerId);
       if(!user) {
-        throw new BadRequestException('Invalid user');
+        throw new BadRequestException('Invalid   user');
       }
       
       return {
@@ -57,6 +57,21 @@ export class BillsService {
         customerName: user.name,
         customerPhone: user.mobile,
       };
+    } catch (error) {
+      throw CommonUtils.formatError(error);
+    }
+  }
+
+  async update(uuid: string, billReq: CreateBillDto): Promise<BillType | null> {
+    try {
+      const existing = await this.billModel.findOne({uuid, isDeleted: false}).exec();
+      if(!existing) {
+        throw new BadRequestException('Bill not found');
+      }
+      
+      existing.set({ ...billReq });
+      await existing.save();
+      return await this.findById(uuid);
     } catch (error) {
       throw CommonUtils.formatError(error);
     }

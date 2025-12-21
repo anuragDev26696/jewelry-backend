@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Logger, Param, Post, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, Post, Put, Res } from '@nestjs/common';
 import { CommonUtils } from 'src/common/common.utils';
 import { CreateBillDto } from 'src/dtos/bill.dto';
 import { BillsService } from './bills.service';
@@ -81,6 +81,15 @@ export class BillsController {
   async findOne(@Param('id') id: string) {
     try {
       return await this.billService.findById(id);
+    } catch (error) {
+      throw CommonUtils.formatError(error);
+    }
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() billReq: CreateBillDto) {
+    try {
+      return await this.billService.create(billReq);
     } catch (error) {
       throw CommonUtils.formatError(error);
     }
