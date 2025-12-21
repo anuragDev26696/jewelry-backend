@@ -87,7 +87,7 @@ BillSchema.pre('save', function (next) {
   this.subtotal = round2(subtotal);
   this.taxAmount = round2(taxAmount);
   this.total = round2(total);
-  this.dueAmount = total - (this.totalPaid || 0);
+  this.dueAmount = round2(total - (this.totalPaid || 0));
   this.paymentMode = this.paymentMode || '';
   this.paymentStatus = (this.totalPaid || 0) === 0 ? PaymentStatus.PENDING : this.dueAmount === 0 ? PaymentStatus.PAID : PaymentStatus.PARTIAL_PAID;
 
