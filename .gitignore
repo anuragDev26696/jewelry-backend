@@ -56,3 +56,6 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # .env
+# BASE_URL=quietistic-uniterative-heide.ngrok-free.dev
+# NGROK_ID=rd_37W3l7D56QJLM7Nsbrq4hkrgr3H
+# NGROK_AUTH_TOKEN=37W3kgPKkdTo9oCS0tYsNQoXN6H_zR6PSMTVjMxtjU3wFQgn
