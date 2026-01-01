@@ -1,34 +1,17 @@
 # Use the official Node image as the base
 FROM node:20
 
-# 1. Install required system dependencies for Puppeteer/Chromium.
+# 1. Install required system dependencies.
 RUN apt-get update && apt-get install -y \
-    gconf-service \
-    libasound2 \
-    libatk1.0-0 \
-    libcairo2 \
-    libcups2 \
-    libfontconfig1 \
-    libgdk-pixbuf2.0-0 \
-    libgtk-3-0 \
-    libjpeg62-turbo \
-    libnss3 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libxss1 \
-    libgbm-dev \
-    libu2f-udev \
-    libvulkan1 \
-    --no-install-recommends \
-    # Clean up the package list cache to reduce the final image size
+    curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Install ngrok (add ngrok to Docker container if needed)
+RUN curl -s https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz | tar xz -C /usr/local/bin
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app
-
-ENV PUPPETEER_PRODUCT=chrome
-ENV PUPPETEER_SKIP_DOWNLOAD=false
-ENV PUPPETEER_EXECUTABLE_PATH=""
 
 # 2. Install Node dependencies
 # Copy package.json and package-lock.json first to utilize Docker's build cache
@@ -49,5 +32,6 @@ ENV PORT 10000
 EXPOSE 10000
 
 # Command to start the application in production mode
+CMD [ "sh", "-c", "ngrok config add-authtoken ${NGROK_AUTHTOKEN} && (npm run start:prod & ngrok http --url=quietistic-uniterative-heide.ngrok-free.dev 10000)" ]
 # This is equivalent to 'npm run start:prod'
-CMD [ "node", "dist/main" ]
+# CMD [ "node", "dist/main" ]
