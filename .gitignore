@@ -56,7 +56,3 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # .env
-# MONGO_URI=mongodb+srv://anuragspundan:82i20P1XU2xKdZ3Z@cluster1.wzkrc20.mongodb.net/swarn-jewellar?retryWrites=true&w=majority
-# JWT_SECRET=swarnjewellery
-# PORT=4000
-# SALT_ROUNDS=10

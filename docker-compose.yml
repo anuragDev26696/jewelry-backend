@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .  # Path to the Dockerfile directory (current directory)
+    ports:
+      - "4000:4000"   # Expose your backend port (10000 in your case)
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/dist
+    environment:
+      - NODE_ENV=production   # Environment variables if needed (e.g., production)
+    command: npm run start:prod   # Command to start your backend server
+
+  ngrok:
+    image: ngrok/ngrok:latest    # Official ngrok Docker image
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}   # Use ngrok authtoken for better limits
+      # - NGROK_PORT=4000        # Map ngrok to your backend server's port (4000)
+    ports:
+      - "4040:4040"            # Expose ngrok's web interface (optional)
+    command: 
+      - "http"
+      - "--url=quietistic-uniterative-heide.ngrok-free.dev"
+      - "app:4000"  # Tunnel the backend server through ngrok
+    depends_on:
+      - app

@@ -21,8 +21,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-  app.use(cors())
-  await app.listen(port);
+  // app.use(cors())
+  await app.listen(port, '0.0.0.0');
   console.log(`Server running on http://localhost:${port}/api`);
 }
 bootstrap();
