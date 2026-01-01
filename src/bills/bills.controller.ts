@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Logger, Param, Post, Put, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, Post, Put, Query, Res } from '@nestjs/common';
 import { CommonUtils } from 'src/common/common.utils';
 import { CreateBillDto } from 'src/dtos/bill.dto';
 import { BillsService } from './bills.service';
@@ -75,6 +75,15 @@ export class BillsController {
         page,
         limit,
       });
+    } catch (error) {
+      throw CommonUtils.formatError(error);
+    }
+  }
+
+  @Get('chart')
+  async getBillingChart(@Query('year') year: number): Promise<any> {
+    try {
+      return await this.billService.getBillingChartData(year || new Date().getFullYear());
     } catch (error) {
       throw CommonUtils.formatError(error);
     }

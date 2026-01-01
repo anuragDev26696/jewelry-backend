@@ -45,4 +45,42 @@ export class CommonUtils {
   private static isError(error: unknown): error is Error {
     return error instanceof Error && typeof error.message === 'string';
   }
+
+  public static getDateRange(range: string) {
+    const end = new Date();
+    const start = new Date();
+
+    switch (range) {
+      case 'thisMonth':
+        start.setDate(1);
+        break;
+
+      case 'lastMonth':
+        start.setMonth(start.getMonth() - 1, 1);
+        end.setDate(0);
+        break;
+
+      case 'last2Months':
+        start.setMonth(start.getMonth() - 2);
+        break;
+
+      case 'last3Months':
+        start.setMonth(start.getMonth() - 3);
+        break;
+
+      case 'quarterly':
+        start.setMonth(start.getMonth() - 3);
+        break;
+
+      case 'halfYearly':
+        start.setMonth(start.getMonth() - 6);
+        break;
+
+      case 'lastYear':
+        start.setFullYear(start.getFullYear() - 1);
+        break;
+    }
+
+    return { start, end };
+  }
 }

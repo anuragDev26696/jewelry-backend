@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, PipelineStage } from 'mongoose';
 import { paginate, PaginationOptions, PaginationResult } from 'src/common/interface/pagination.interface';
 import { CreateBillDto } from 'src/dtos/bill.dto';
 import { Bill, BillDocument } from 'src/schemas/bill.schema';
@@ -123,6 +123,47 @@ export class BillsService {
     ).exec();
   }
   
+  async getBillingChartData(year: number): Promise<any> {
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31, 23, 59, 59);
+
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          isDeleted: false,
+          createdAt: { $gte: start, $lte: end },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+          },
+          totalAmount: { $sum: '$price' },
+          totalItems: { $sum: 1 },
+        },
+      },
+      {
+        $sort: {
+          '_id.year': 1,
+          '_id.month': 1,
+        } as PipelineStage.Sort['$sort'],
+      },
+    ];
+
+    const result = await this.billModel.aggregate(pipeline);
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const found: ChartItemGroup | undefined = result.find((r: ChartItemGroup) => r._id.month === i + 1);
+      return {
+        year,
+        month: i + 1,
+        totalAmount: found?.totalAmount ?? 0,
+        totalItems: found?.totalItems ?? 0,
+      };
+    });
+    return { data: months };
+  }
 
   round2(v: number): number {
     return Math.round((v + Number.EPSILON) * 100) / 100;
@@ -417,4 +458,14 @@ export class BillsService {
       throw CommonUtils.formatError(error);
     }
   }
+}
+
+type ChartItemGroup = {
+  _id: chartItemId,
+  totalAmount: number,
+  totalItems: number,
+}
+type chartItemId = {
+  month: any,
+  year: number,
 }
