@@ -31,4 +31,10 @@ export class SearchRequestDTO {
   @IsString()
   @Type(() => String)
   billStatus?: string;
+  
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  range: 'thisMonth' | 'lastMonth' | 'last2Months' | 'last3Months' | 'quarterly' | 'halfYearly' | 'lastYear';
+
 }
